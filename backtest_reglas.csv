@@ -1,0 +1,8 @@
+estrategia,valor_final,tir_%,comisiones,desvio_promedio_%
+"Reparto exacto, sin comisiones (teórico)",104232.63,21.85,0.0,3.73
+Reparto exacto en los 10 fondos,102147.98,21.01,1220.0,3.73
+Una compra por mes al mayor déficit,104585.99,21.99,122.0,6.21
+"Hasta 3 compras, solo déficit",104503.65,21.96,290.0,1.84
+"Hasta 3 compras, caída cruda (/20)",104335.98,21.89,268.0,2.12
+"Hasta 3 compras, caída / volatilidad (regla elegida)",104731.18,22.05,276.0,2.05
+"Hasta 2 compras, caída / volatilidad",104178.4,21.83,238.0,2.37
