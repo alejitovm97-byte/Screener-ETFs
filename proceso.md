@@ -6,7 +6,7 @@ title: El proceso en Python
 
 Cómo se pasó de más de 4.500 ETFs a una cartera de 10, con código que cualquiera puede ejecutar. [Volver a la metodología](./)
 
-Todo el código está en la carpeta [`python/`](https://github.com/TU-USUARIO/TU-REPOSITORIO/tree/main/python) del repositorio, en dos formatos: cinco scripts numerados y un notebook listo para Google Colab ([abrir en Colab](https://colab.research.google.com/github/TU-USUARIO/TU-REPOSITORIO/blob/main/python/metodologia_etf.ipynb)). Los parámetros (fondos, pesos, umbrales) están en `config.py`, así que para probar una variante alcanza con cambiar ese archivo.
+Todo el código está en la carpeta [`python/`](https://github.com/alejitovm97-byte/Screener-ETFs/tree/main/python) del repositorio, en dos formatos: cinco scripts numerados y un notebook listo para Google Colab ([abrir en Colab](https://colab.research.google.com/github/alejitovm97-byte/Screener-ETFs/blob/main/python/metodologia_etf.ipynb)). Los parámetros (fondos, pesos, umbrales) están en `config.py`, así que para probar una variante alcanza con cambiar ese archivo.
 
 | Paso | Script | Qué hace | Resultado |
 |---|---|---|---|
