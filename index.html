@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Compra mensual de ETFs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&display=swap" rel="stylesheet">
+<style id="app-style">
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --paper:#EDF1EF; --panel:#FFFFFF; --ink:#16232B; --muted:#5A6A72; --line:#D3DCD8;
+  --accent:#1F6F5C; --accent-soft:#DCEEE8; --warn:#9A5B12; --warn-soft:#FBF0DF;
+  --b1:#2F5D7C; --b2:#A9843A; --b3:#7A4E7E; --ticket:#FFFDF6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1719; --panel:#162226; --ink:#E3EBE8; --muted:#97A7AE; --line:#2A3A3F;
+    --accent:#62C3A9; --accent-soft:#173531; --warn:#E3A857; --warn-soft:#3A2C17;
+    --b1:#79A9CB; --b2:#D6B36A; --b3:#C08FC4; --ticket:#1B282C;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1719; --panel:#162226; --ink:#E3EBE8; --muted:#97A7AE; --line:#2A3A3F;
+  --accent:#62C3A9; --accent-soft:#173531; --warn:#E3A857; --warn-soft:#3A2C17;
+  --b1:#79A9CB; --b2:#D6B36A; --b3:#C08FC4; --ticket:#1B282C;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.55 "Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+.wrap{max-width:1080px;margin:0 auto;padding:26px 18px 60px}
+h1{font:650 clamp(24px,3.6vw,34px)/1.15 "Source Serif 4",Georgia,serif;margin:0 0 6px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0;font-size:14px}
+nav.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:22px 0 20px}
+nav.tabs button{font:600 14px/1 "Manrope",sans-serif;padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h2{font:650 21px/1.25 "Source Serif 4",Georgia,serif;margin:30px 0 6px}
+.hint{color:var(--muted);font-size:14px;margin:0 0 12px;max-width:72ch}
+
+/* The ticket: the one bold element */
+.ticket{position:relative;background:var(--ticket);border:1px solid var(--line);border-radius:14px;padding:22px 24px 20px;display:grid;grid-template-columns:1fr auto;gap:8px 24px;align-items:end}
+.ticket::before,.ticket::after{content:"";position:absolute;right:218px;width:22px;height:22px;border-radius:50%;background:var(--paper);border:1px solid var(--line)}
+.ticket::before{top:-12px;clip-path:inset(50% 0 0 0)}
+.ticket::after{bottom:-12px;clip-path:inset(0 0 50% 0)}
+@media (max-width:640px){.ticket{grid-template-columns:1fr}.ticket::before,.ticket::after{display:none}}
+.ticket .what{font-size:14px;color:var(--muted);margin:0}
+.ticket .fund{font:650 clamp(24px,4vw,36px)/1.1 "Source Serif 4",Georgia,serif;margin:4px 0 6px}
+.ticket .ids{font-size:13px;color:var(--muted)}
+.ticket .amount{border-left:2px dashed var(--line);padding-left:24px;min-width:190px}
+@media (max-width:640px){.ticket .amount{border-left:none;border-top:2px dashed var(--line);padding:14px 0 0}}
+.ticket .usd{font:700 34px/1 "Manrope",sans-serif;letter-spacing:-.02em}
+.ticket .units{font-size:14px;color:var(--muted);margin-top:6px}
+.ticket .why{grid-column:1/-1;font-size:14px;margin:10px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+.ticket.wait .fund{color:var(--warn)}
+.ticket.multi{display:block}
+.ticket .thead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.ticket .count{margin:0;font:650 20px "Source Serif 4",Georgia,serif}
+.ticket .line{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:12px 0;border-top:2px dashed var(--line)}
+.ticket .lname{font:650 clamp(18px,2.6vw,23px)/1.2 "Source Serif 4",Georgia,serif}
+.ticket .line .ids{display:block;margin-top:2px}
+.ticket .lamt{text-align:right;min-width:150px}
+.ticket .lamt b{display:block;font:700 24px/1.1 "Manrope",sans-serif;letter-spacing:-.01em}
+.ticket .lamt span{font-size:13px;color:var(--muted)}
+.ticket.multi::before,.ticket.multi::after{display:none}
+@media (max-width:560px){.ticket .line{flex-direction:column;align-items:flex-start}.ticket .lamt{text-align:left}}
+.b-dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:1px}
+
+.money{display:flex;flex-wrap:wrap;gap:12px 18px;margin:18px 0 0}
+.money label{display:flex;flex-direction:column;font-size:13px;color:var(--muted);gap:4px}
+.money input{width:130px;text-align:right}
+input[type=number],input[type=text]{font:500 15px "Manrope",sans-serif;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink);font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%}
+.grid{min-width:960px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;vertical-align:middle}
+th{font-size:12.5px;font-weight:600;color:var(--muted)}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:none}
+tr.blockrow td{background:var(--paper);font-weight:700;font-size:13px;text-align:left;color:var(--ink)}
+tr.pick td{background:var(--accent-soft)}
+.fname{font-weight:600;white-space:normal;min-width:200px}
+.small{display:block;font-size:12px;color:var(--muted);font-weight:500}
+td input[type=number],td input[type=text]{width:108px;text-align:right}
+td input.dd{width:70px}
+.barcell{min-width:170px}
+.bar{position:relative;height:10px;background:var(--line);border-radius:3px;width:120px;margin-left:auto}
+.bar span{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+.bar i{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.pct{font-size:12.5px;color:var(--muted);display:block;margin-bottom:3px}
+.neg{color:var(--warn);font-weight:600}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.btn{font:700 14.5px "Manrope",sans-serif;padding:11px 16px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.note{margin-top:14px;font-size:13px;color:var(--muted);max-width:75ch}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:8px;font-size:14px;z-index:5;max-width:90vw}
+.flag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--warn-soft);color:var(--warn);margin-left:6px}
+.ok{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--accent-soft);color:var(--accent);margin-left:6px}
+.review{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.review label{display:grid;grid-template-columns:22px 1fr;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.review label:last-child{border-bottom:none}
+.review b{display:block}
+.review span{font-size:14px;color:var(--muted)}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:760px}
+.settings label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.check{display:flex;gap:8px;align-items:center;font-size:14px;margin-top:14px}
+.empty{padding:22px;color:var(--muted)}
+.site{background:var(--panel);border-bottom:1px solid var(--line)}
+.site-in{max-width:1080px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap}
+.brand{font:650 19px/1 "Source Serif 4",Georgia,serif;color:var(--ink);text-decoration:none;display:flex;align-items:baseline;gap:8px}
+.brand span{font:600 12.5px "Manrope",sans-serif;color:var(--muted)}
+.site-links{display:flex;gap:4px;overflow-x:auto}
+.site-links a{font-weight:600;font-size:14px;color:var(--muted);text-decoration:none;padding:7px 10px;border-radius:7px;white-space:nowrap}
+.site-links a:hover{color:var(--ink);background:var(--paper)}
+.site-links a[aria-current="page"]{color:var(--ink);box-shadow:inset 0 -2px 0 var(--accent);border-radius:0}
+.wrap header{padding-top:10px}
+.sub{max-width:70ch}
+.start{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:4px 20px 12px}
+.start h2{margin:14px 0 6px;font-size:18px}
+.start ol{margin:0;padding-left:20px}
+.start li{margin:6px 0;max-width:80ch}
+details.help{margin:-4px 0 14px;max-width:80ch}
+details.help summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--accent)}
+details.help p{font-size:14px;color:var(--muted);margin:8px 0 0}
+.ticket .why b{font-weight:700}
+:root{--f1:#1E4E6E;--f2:#2F6E95;--f3:#5C93B8;--f4:#93BAD6;--f5:#9A6B1F;--f6:#D1A24A;--f7:#5E3563;--f8:#7F4E85;--f9:#A57AAA;--f10:#C9A8CD;
+  --c1:#2F6E95;--c2:#C0792B;--c3:#4E8F5A;--c4:#A34A4A;--c5:#7F4E85;--c6:#3F8F8F;--c7:#B5577F;--c8:#8C8C3A;--c9:#6B7C85;--c10:#5A4FA0;--c11:#9A6B1F;--c12:#D1A24A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--f1:#4F86AE;--f2:#6FA3C9;--f3:#98C0DD;--f4:#C3DBEC;--f5:#C99A4B;--f6:#E9C77F;--f7:#A06AA6;--f8:#B98BBE;--f9:#D0ACD4;--f10:#E6D1E8;
+  --c1:#6FA3C9;--c2:#E0A060;--c3:#7FBF8A;--c4:#D27A7A;--c5:#B98BBE;--c6:#6CC2C2;--c7:#DB8DAF;--c8:#C0C06A;--c9:#98A9B2;--c10:#9A90DA;--c11:#C99A4B;--c12:#E9C77F}}
+:root[data-theme="dark"]{--f1:#4F86AE;--f2:#6FA3C9;--f3:#98C0DD;--f4:#C3DBEC;--f5:#C99A4B;--f6:#E9C77F;--f7:#A06AA6;--f8:#B98BBE;--f9:#D0ACD4;--f10:#E6D1E8;
+  --c1:#6FA3C9;--c2:#E0A060;--c3:#7FBF8A;--c4:#D27A7A;--c5:#B98BBE;--c6:#6CC2C2;--c7:#DB8DAF;--c8:#C0C06A;--c9:#98A9B2;--c10:#9A90DA;--c11:#C99A4B;--c12:#E9C77F}
+.kpis{display:flex;flex-wrap:wrap;gap:28px;margin:4px 0 8px}
+.kpis div{min-width:130px}
+.kpis b{display:block;font:700 26px/1.1 "Manrope",sans-serif;letter-spacing:-.01em}
+.kpis span{font-size:13px;color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.pies{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.pie{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.pie svg{width:170px;height:170px;flex:none}
+.legend{list-style:none;margin:0;padding:0;font-size:13px;flex:1;min-width:160px}
+.legend li{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center;padding:3px 0}
+.legend i{width:10px;height:10px;border-radius:2px}
+.legend em{font-style:normal;color:var(--muted)}
+.panel h3{font:650 16px/1.3 "Source Serif 4",Georgia,serif;margin:0 0 10px}
+.chart svg{width:100%;height:auto;display:block}
+.chart .axis{font:12px "Manrope",sans-serif;fill:var(--muted)}
+.chart .lg{display:flex;gap:16px;font-size:13px;color:var(--muted);margin-top:6px}
+.chart .lg i{display:inline-block;width:14px;height:3px;vertical-align:3px;margin-right:6px}
+.comp textarea{width:100%;font:500 13.5px "Manrope",sans-serif;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink);resize:vertical;min-height:38px}
+.comp td{white-space:normal;vertical-align:top}
+@media (prefers-reduced-motion:no-preference){.ticket{animation:land .35s ease-out}@keyframes land{from{transform:translateY(6px);opacity:.4}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="application/json" id="state">{"version": 1, "savedAt": 0, "lastUpdate": "", "cash": 0, "settings": {"contribution": 1000, "fee": 2, "minTicket": 250, "maxBuys": 3, "useDD": true, "volStep": 1}, "funds": [{"id": "ndx", "name": "BNP Paribas Easy II Nasdaq 100", "isin": "IE000QDFFK00", "ticker": "", "block": "Principal", "w": 30, "exit": "Revisar el vehículo: TER, tamaño y seguimiento del índice frente al Invesco Nasdaq-100 Swap y el Xtrackers Nasdaq 100."}, {"id": "exus", "name": "Xtrackers MSCI World ex USA", "isin": "IE0006WW1TQ4", "ticker": "", "block": "Principal", "w": 15, "exit": "Revisar el vehículo: TER, tamaño y seguimiento frente a iShares y Amundi MSCI World ex USA."}, {"id": "scv", "name": "Avantis Global Small Cap Value", "isin": "IE0003R87OG3", "ticker": "AVGS", "block": "Principal", "w": 15, "exit": "Que mantenga su enfoque value con filtro de rentabilidad, más de 500 millones de patrimonio y TER estable. Reemplazo: Dimensional Global Targeted Value, o SPDR USA y Europe Small Cap Value."}, {"id": "emv", "name": "iShares Edge MSCI EM Value Factor", "isin": "IE00BG0SKF03", "ticker": "EMVL", "block": "Principal", "w": 10, "exit": "Que siga siendo value, tenga más de 500 millones de patrimonio y el TER no suba. Si falla alguna: pasar a Avantis Emerging Markets Equity."}, {"id": "cmd", "name": "iShares Bloomberg Roll Select Commodity", "isin": "IE00BZ1NCS44", "ticker": "", "block": "Commodities", "w": 5, "exit": "Revisar el vehículo: TER y tamaño. Alternativa: L&G Multi-Strategy Enhanced Commodities."}, {"id": "gold", "name": "iShares Physical Gold ETC", "isin": "IE00B4ND3602", "ticker": "", "block": "Commodities", "w": 5, "exit": "Revisar el vehículo: TER y custodia física asignada."}, {"id": "grid", "name": "First Trust Smart Grid Infrastructure", "isin": "IE000J80JTL1", "ticker": "", "block": "Temáticos", "w": 8, "exit": "Salir si la inversión mundial en redes cae en términos reales dos años seguidos según la IEA, o si la IEA deja de señalar la red como cuello de botella. Alternativa más barata a seguir: Xtrackers Electrification & Smart Grid."}, {"id": "nucl", "name": "VanEck Uranium and Nuclear Technologies", "isin": "IE000M7V94E1", "ticker": "NUCL", "block": "Temáticos", "w": 7, "exit": "Salir si el informe de la WNA de 2027 baja el escenario de referencia para 2040 por debajo de 552 GWe, o si dos de EE.UU., China e India revierten formalmente su expansión nuclear."}, {"id": "dfns", "name": "VanEck Defense", "isin": "IE000YYE6WK5", "ticker": "", "block": "Temáticos", "w": 3, "exit": "Salir si la revisión de la OTAN de 2029 baja la meta del 5%, o si el gasto europeo en defensa cae en términos reales dos años seguidos."}, {"id": "qntm", "name": "VanEck Quantum Computing", "isin": "IE0007Y8Y157", "ticker": "QNTM", "block": "Temáticos", "w": 2, "exit": "Salir si los ingresos de la industria en 2028 (monitor de McKinsey) quedan por debajo de 2.200 millones de dólares, o si IBM y Google postergan la computación tolerante a fallas más allá de 2032."}], "holdings": {}, "dd": {}, "prices": {}, "log": [], "review": {}, "vol": {"ndx": 19.3, "exus": 11.0, "scv": 12.0, "emv": 24.6, "cmd": 19.6, "gold": 25.2, "grid": 20.2, "nucl": 36.5, "dfns": 24.9, "qntm": 29.6}, "nav": {"units": 0, "history": []}, "comp": {"ndx": {"reg": "EE.UU. 94,4; Europa 3,1; Canadá 1; Otros 1,5", "sec": "Tecnología 52; Comunicaciones 15; Consumo 17; Salud 6; Industria 5; Utilities 1; Otros 4"}, "exus": {"reg": "Europa 60; Japón 22; Canadá 11; Otros 7", "sec": "Financiero 24; Industria 17; Consumo 14; Salud 10; Tecnología 9; Materiales 6; Energía 5; Comunicaciones 5; Utilities 4; Otros 6"}, "scv": {"reg": "EE.UU. 67,9; Japón 10,6; Europa 13; Canadá 4; Otros 4,5", "sec": "Financiero 23,8; Consumo 17,1; Energía 15,8; Industria 15; Materiales 10; Tecnología 5,1; Salud 5; Otros 8,2"}, "emv": {"reg": "Emergentes 100", "sec": "Financiero 30; Tecnología 15; Consumo 15; Energía 10; Materiales 10; Comunicaciones 8; Industria 7; Otros 5"}, "cmd": {"reg": "Commodities 100", "sec": "Commodities 100"}, "gold": {"reg": "Oro 100", "sec": "Oro 100"}, "grid": {"reg": "EE.UU. 50; Europa 40; Otros 10", "sec": "Industria 62; Utilities 22; Tecnología 11; Otros 5"}, "nucl": {"reg": "Canadá 35; EE.UU. 25; Japón 20; Emergentes 10; Otros 10", "sec": "Energía 50; Industria 42; Utilities 7; Otros 1"}, "dfns": {"reg": "EE.UU. 46; Europa 29,5; Emergentes 10; Japón 6; Canadá 2; Otros 6,5", "sec": "Industria 85; Tecnología 13; Otros 2"}, "qntm": {"reg": "EE.UU. 70; Japón 10; Emergentes 8; Europa 7; Otros 5", "sec": "Tecnología 80; Industria 10; Comunicaciones 5; Otros 5"}}}</script>
+<script id="app-script">
+(function(){
+const LS_KEY = "plan-etf-mensual-v1";
+const SITE_BASE = "";
+const BLOCK_COLOR = {"Principal":"var(--b1)","Commodities":"var(--b2)","Temáticos":"var(--b3)"};
+let state = JSON.parse(document.getElementById("state").textContent);
+let tab = "mes";
+let art = null;            // artifact namespace when available
+let saveMode = "pending";  // "artifact" | "local" | "readonly" | "pending"
+let busy = false;
+
+const $ = s => document.querySelector(s);
+const fmt = (n, d=0) => (isFinite(n) ? n : 0).toLocaleString("es-UY",{minimumFractionDigits:d,maximumFractionDigits:d});
+const usd = (n, d=0) => "USD " + fmt(n, d);
+const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num = (v, kind) => {
+  let t = String(v == null ? "" : v).trim().replace(/\s/g, "").replace(/^USD/i, "");
+  if (!t) return 0;
+  const lc = t.lastIndexOf(","), ld = t.lastIndexOf(".");
+  if (lc > -1 && ld > -1){ t = lc > ld ? t.replace(/\./g, "").replace(",", ".") : t.replace(/,/g, ""); }
+  else if (lc > -1){ t = t.replace(",", "."); }
+  else if (kind === "money" && /^\d{1,3}(\.\d{3})+$/.test(t)){ t = t.replace(/\./g, ""); }
+  const x = parseFloat(t); return isFinite(x) ? x : 0;
+};
+const inp = v => (v === 0 || v == null || v === "") ? "" : String(v).replace(".", ",");
+
+function toast(msg){
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3200);
+}
+
+/* ---------- persistence ---------- */
+function buildHtml(s){
+  const style = document.getElementById("app-style").textContent;
+  const script = document.getElementById("app-script").textContent;
+  const json = JSON.stringify(s).replace(/</g, "\\u003c");
+  const close = "<" + "/script>";
+  return "<!doctype html>\n<html lang=\"es\">\n<head>\n<meta charset=\"utf-8\">\n" +
+    "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n" +
+    "<title>Compra mensual de ETFs</title>\n" +
+    "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n" +
+    "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n" +
+    "<link href=\"https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&display=swap\" rel=\"stylesheet\">\n" +
+    "<style id=\"app-style\">" + style + "</style>\n</head>\n<body>\n<div id=\"root\"></div>\n" +
+    "<script type=\"application/json\" id=\"state\">" + json + close + "\n" +
+    "<script id=\"app-script\">" + script + close + "\n</body>\n</html>\n";
+}
+
+async function save(msgOk){
+  state.savedAt = Date.now();
+  if (saveMode === "artifact" && art){
+    busy = true; render();
+    try {
+      await art.publish(buildHtml(state));
+      return; // the view reloads to the new version
+    } catch (e){
+      busy = false;
+      const code = e && e.code;
+      if (code === "conflict") { return; }
+      if (code === "not_writer" || code === "not_granted" || code === "consent_required" || code === "not_declared"){
+        saveMode = "readonly"; render(); toast("Esta vista es de solo lectura: no se guardan cambios."); return;
+      }
+      saveMode = "local";
+    }
+  }
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); toast(msgOk + " (en este navegador)"); }
+  catch { toast("No se pudo guardar. Copiá los valores antes de cerrar."); }
+  render();
+}
+
+function initCapability(){
+  const c = window.claude;
+  const p = (c && typeof c.use === "function") ? c.use("artifact") : Promise.resolve(null);
+  p.then(ns => {
+    if (ns){ art = ns; saveMode = "artifact"; }
+    else {
+      saveMode = "local";
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (raw){ const ls = JSON.parse(raw); if ((ls.savedAt||0) > (state.savedAt||0)) state = ls; }
+      } catch {}
+    }
+    render();
+  }).catch(() => { saveMode = "local"; render(); });
+}
+
+/* ---------- calculation ---------- */
+function readInputs(){
+  document.querySelectorAll("[data-val]").forEach(i => state.holdings[i.dataset.val] = num(i.value, "money"));
+  document.querySelectorAll("[data-dd]").forEach(i => state.dd[i.dataset.dd] = num(i.value));
+  document.querySelectorAll("[data-price]").forEach(i => state.prices[i.dataset.price] = num(i.value));
+  state.vol = state.vol || {};
+  document.querySelectorAll("[data-vol]").forEach(i => state.vol[i.dataset.vol] = num(i.value));
+  const c = $("#contrib"); if (c) state.settings.contribution = num(c.value, "money");
+  const k = $("#carry"); if (k) state.cash = num(k.value, "money");
+}
+
+function mult(id){
+  const S = state.settings;
+  if (!S.useDD) return 1;
+  const d = state.dd[id] || 0, v = (state.vol || {})[id] || 0;
+  const z = v > 0 ? d / v : d / 20;
+  return Math.min(3, 1 + z / (S.volStep || 1));
+}
+
+function compute(){
+  const F = state.funds, S = state.settings;
+  const val = id => state.holdings[id] || 0;
+  const fee = S.fee || 0, minT = S.minTicket || 0, maxB = Math.max(1, S.maxBuys || 3);
+  const invested = F.reduce((a,f) => a + val(f.id), 0);
+  const cash = (S.contribution || 0) + (state.cash || 0);
+  const total = invested + cash;
+  const rows = F.map(f => {
+    const actual = invested > 0 ? val(f.id) / invested * 100 : 0;
+    const deficit = f.w/100 * total - val(f.id);
+    const m = mult(f.id);
+    return {...f, actual, deficit, m, score: Math.max(0, deficit) * m};
+  });
+  const ranked = rows.filter(r => r.score > 0).sort((a,b) => b.score - a.score);
+  const price = id => state.prices[id] || 0;
+  let excluded = new Set(), buys = [];
+  for (let guard = 0; guard < 30; guard++){
+    const pool = ranked.filter(r => !excluded.has(r.id));
+    if (!pool.length) break;
+    let k = Math.min(maxB, pool.length), chosen = null, amounts = null;
+    for (; k >= 1; k--){
+      let list = pool.slice(0, k);
+      if (!list.some(r => r.block === "Principal")){
+        const core = pool.find(r => r.block === "Principal");
+        if (core) list = list.slice(0, k-1).concat([core]);
+      }
+      const inv = cash - fee * list.length;
+      const sc = list.reduce((a,r) => a + r.score, 0);
+      const am = list.map(r => inv * r.score / sc);
+      if (am.every(a => a >= minT) || k === 1){ chosen = list; amounts = am; break; }
+    }
+    if (!chosen) break;
+    // whole shares when a price is known
+    const bad = chosen.find((r,i) => price(r.id) > 0 && Math.floor(amounts[i] / price(r.id)) < 1);
+    if (bad && chosen.length > 1){ excluded.add(bad.id); continue; }
+    buys = chosen.map((r,i) => {
+      const p = price(r.id);
+      if (p > 0){ const sh = Math.floor(amounts[i] / p); return {r, target: amounts[i], price: p, shares: sh, spend: sh * p}; }
+      return {r, target: amounts[i], price: 0, shares: null, spend: amounts[i]};
+    });
+    break;
+  }
+  let wait = false, reason = "";
+  if (!buys.length || cash - fee < minT){ wait = true; reason = "ticket"; }
+  else if (buys.length === 1 && buys[0].shares === 0){ wait = true; reason = "price"; }
+  if (wait) buys = [];
+  const feeTotal = fee * buys.length;
+  let leftover = cash - feeTotal - buys.reduce((a,b) => a + b.spend, 0);
+  // use leftover to add whole shares, highest priority first
+  buys.forEach(b => { if (b.price > 0){ while (leftover >= b.price){ b.shares++; b.spend += b.price; leftover -= b.price; } } });
+  const pick = ranked[0] || rows[0];
+  return {rows, ranked, pick, buys, invested, cash, total, feeTotal, leftover: Math.max(0, leftover), wait, reason};
+}
+
+/* ---------- views ---------- */
+function ticketHtml(c){
+  if (c.wait){
+    const p = c.pick;
+    const why = c.reason === "ticket"
+      ? `El efectivo disponible (${usd(c.cash)}) menos la comisión no llega al ticket mínimo de ${usd(state.settings.minTicket)}. Registrá el mes sin compra y el dinero se suma al aporte del mes que viene.`
+      : `Revisá el precio cargado de ${esc(p.name)} (${usd(state.prices[p.id]||0,2)}): con ese precio no alcanza para una participación. Si es correcto, registrá el mes sin compra y acumulá.`;
+    return `<section class="ticket wait" aria-live="polite"><div><p class="what">Este mes</p><p class="fund">No comprar: acumular</p><span class="ids">Siguiente en la fila: ${esc(p.name)}</span></div>
+      <div class="amount"><div class="usd">${usd(c.cash)}</div><div class="units">quedan en efectivo</div></div><p class="why">${why}</p></section>`;
+  }
+  const lines = c.buys.map(b => {
+    const r = b.r;
+    const units = b.shares != null ? `${fmt(b.shares)} participaciones a ${usd(b.price,2)}` : "sin precio cargado";
+    const tag = r.m > 1.001 ? `<span class="flag">${fmt(state.dd[r.id]||0)}% bajo máx.</span>` : "";
+    return `<div class="line"><div><span class="lname"><span class="b-dot" style="background:${BLOCK_COLOR[r.block]}"></span>${esc(r.name)}</span>${tag}
+      <span class="ids">${esc(r.isin)}${r.ticker ? " · Londres: " + esc(r.ticker) : ""}</span></div>
+      <div class="lamt"><b>${usd(b.spend, b.shares != null ? 2 : 0)}</b><span>${units}</span></div></div>`;
+  }).join("");
+  const pctFee = c.cash > 0 ? c.feeTotal / c.cash * 100 : 0;
+  const skipped = c.ranked.filter(r => !c.buys.some(b => b.r.id === r.id)).slice(0,2).map(r => esc(r.name));
+  return `<section class="ticket multi" aria-live="polite"><div class="thead"><p class="what">Este mes comprá</p><p class="count">${c.buys.length === 1 ? "1 fondo" : c.buys.length + " fondos"}</p></div>
+    ${lines}
+    <p class="why"><b>Total: ${usd(c.buys.reduce((a,b) => a + b.spend, 0), 0)} en ${c.buys.length === 1 ? "una compra" : c.buys.length + " compras"}.</b> Reparto según déficit frente a la meta y caída desde el máximo. Comisiones estimadas: ${usd(c.feeTotal,2)} (${fmt(pctFee,1)}% del aporte).${c.leftover >= 1 ? ` Sobran ${usd(c.leftover,2)} para el mes que viene.` : ""}${skipped.length ? ` Quedan para más adelante: ${skipped.join(" y ")}.` : ""}</p></section>`;
+}
+
+function mesView(){
+  const c = compute();
+  const blocks = ["Principal","Commodities","Temáticos"];
+  let rows = "";
+  blocks.forEach(b => {
+    const fs = c.rows.filter(r => r.block === b);
+    const wb = fs.reduce((a,r) => a + r.w, 0);
+    const ab = fs.reduce((a,r) => a + r.actual, 0);
+    rows += `<tr class="blockrow"><td colspan="8"><span class="b-dot" style="background:${BLOCK_COLOR[b]}"></span>${b}: meta ${fmt(wb)}%, actual ${fmt(ab,1)}%</td></tr>`;
+    fs.forEach(r => {
+      const maxScale = Math.max(r.w, r.actual, 1) * 1.6;
+      rows += `<tr class="${c.buys.some(b => b.r.id === r.id) ? "pick" : ""}">
+        <td class="fname">${esc(r.name)}<span class="small">${esc(r.isin)}${r.ticker ? " · " + esc(r.ticker) : ""}</span></td>
+        <td>${fmt(r.w)}%${r.m > 1.001 ? `<span class="small">prioridad ×${fmt(r.m,2)}</span>` : ""}</td>
+        <td><input type="text" inputmode="decimal" data-val="${r.id}" value="${inp(state.holdings[r.id])}" placeholder="0" aria-label="Valor actual de ${esc(r.name)} en USD"></td>
+        <td><input type="text" inputmode="decimal" class="dd" data-dd="${r.id}" value="${inp(state.dd[r.id])}" placeholder="0" aria-label="Caída desde el máximo de 52 semanas de ${esc(r.name)}"></td>
+        <td><input type="text" inputmode="decimal" class="dd" data-vol="${r.id}" value="${inp((state.vol||{})[r.id])}" placeholder="0" aria-label="Volatilidad anual de ${esc(r.name)}"></td>
+        <td><input type="text" inputmode="decimal" data-price="${r.id}" value="${inp(state.prices[r.id])}" placeholder="0,00" aria-label="Precio de ${esc(r.name)}"></td>
+        <td class="barcell"><span class="pct">${fmt(r.actual,1)}% de ${fmt(r.w)}%</span>
+          <div class="bar" aria-hidden="true"><span style="width:${Math.min(100, r.actual/maxScale*100)}%;background:${BLOCK_COLOR[r.block]}"></span><i style="left:${Math.min(100, r.w/maxScale*100)}%"></i></div></td>
+        <td class="${r.deficit < 0 ? "neg" : ""}">${r.deficit < 0 ? "−" : ""}${usd(Math.abs(r.deficit))}</td></tr>`;
+    });
+  });
+  const ro = saveMode === "readonly";
+  const first = !state.log.length && c.invested === 0 ? `<section class="start" aria-label="Primeros pasos"><h2>Primeros pasos</h2><ol>
+    <li><b>Cargá lo que ya tenés.</b> En la tabla de abajo, el valor de mercado en dólares de cada posición; si arrancás de cero, dejala vacía.</li>
+    <li><b>Mirá la boleta.</b> Te dice qué fondos comprar este mes y cuánto. Con el precio cargado, calcula participaciones enteras.</li>
+    <li><b>Comprá y registrá.</b> Hacé las órdenes en tu broker y apretá "Registrar". El mes que viene, repetís desde el paso 1.</li></ol></section>` : "";
+  return `${ticketHtml(c)}${first}
+  <div class="money">
+    <label>Aporte de este mes (USD)<input id="contrib" type="text" inputmode="decimal" value="${inp(state.settings.contribution)}"></label>
+    <label>Efectivo que quedó del mes anterior<input id="carry" type="text" inputmode="decimal" value="${inp(state.cash) || "0"}"></label>
+    <label>Total en la cartera<input type="text" value="${usd(c.total)}" readonly tabindex="-1"></label>
+  </div>
+  <h2>Actualizá los valores de tu cuenta</h2>
+  <p class="hint">Copiá de Interactive Brokers el valor de mercado de cada posición en dólares. Todo se recalcula al salir de cada campo.</p>
+  <details class="help"><summary>Qué va en cada columna</summary><p>La caída desde el máximo de 52 semanas va en porcentaje (si está 12% abajo, poné 12). La prioridad sube según cuánto cayó en relación con su volatilidad anual: una caída igual a su volatilidad duplica la prioridad, con tope de 3 veces. La volatilidad cambia poco; alcanza con actualizarla en la revisión anual (está en la ficha de justETF). El precio en dólares sirve para calcular participaciones enteras.</p></details>
+  <div class="scroll"><table class="grid"><thead><tr><th>Fondo</th><th>Meta</th><th>Valor actual (USD)</th><th>Caída desde máx. (%)</th><th>Volatilidad anual (%)</th><th>Precio (USD)</th><th>Peso actual vs meta</th><th>Déficit</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="actions">
+    <button class="btn" id="register" ${ro || busy ? "disabled" : ""}>${c.wait ? "Registrar mes sin compra" : (c.buys.length > 1 ? "Registrar estas compras" : "Registrar esta compra")}</button>
+    <button class="btn ghost" id="saveVals" ${ro || busy ? "disabled" : ""}>Guardar valores sin registrar</button>
+  </div>
+  <p class="note">${saveNote()}</p>`;
+}
+
+function saveNote(){
+  if (busy) return "Guardando…";
+  if (saveMode === "artifact") return "Los cambios se guardan en esta página. Última actualización: " + (state.lastUpdate || "todavía ninguna") + ".";
+  if (saveMode === "readonly") return "Vista de solo lectura: podés calcular, pero no se guardan cambios.";
+  if (saveMode === "local") return "Los cambios se guardan solo en este navegador; exportá una copia desde Ajustes cada tanto. Última actualización: " + (state.lastUpdate || "todavía ninguna") + ".";
+  return "";
+}
+
+function histView(){
+  const L = state.log.slice().reverse();
+  if (!L.length) return `<h2>Historial de compras</h2><div class="review"><p class="empty">Todavía no hay compras registradas. Cuando registres la primera desde la pestaña del mes, aparece acá.</p></div>`;
+  const byFund = {};
+  state.log.forEach(e => { if (e.fund){ byFund[e.fund] = byFund[e.fund] || {n:0, amt:0}; byFund[e.fund].n++; byFund[e.fund].amt += e.amount; } });
+  const name = id => (state.funds.find(f => f.id === id) || {name:id}).name;
+  const totalAportado = state.log.reduce((a,e) => a + (e.contribution || 0), 0);
+  const fees = state.log.reduce((a,e) => a + (e.fee || 0), 0);
+  const rows = L.map(e => `<tr><td>${esc(e.date)}</td><td class="fname">${e.fund ? esc(name(e.fund)) : "Sin compra: acumulado"}</td><td>${e.fund ? usd(e.amount,2) : "—"}</td><td>${e.shares != null ? fmt(e.shares) : "—"}</td><td>${e.price ? usd(e.price,2) : "—"}</td><td>${usd(e.contribution||0)}</td></tr>`).join("");
+  const sum = state.funds.map(f => byFund[f.id] ? `<tr><td class="fname">${esc(f.name)}</td><td>${byFund[f.id].n}</td><td>${usd(byFund[f.id].amt,2)}</td></tr>` : "").join("");
+  return `<h2>Historial de compras</h2><p class="hint">${new Set(state.log.map(e => e.batch || e.date)).size} meses registrados. Total aportado: ${usd(totalAportado)}. Comisiones estimadas: ${usd(fees,2)}.</p>
+  <div class="scroll"><table><thead><tr><th>Fecha</th><th>Fondo</th><th>Monto</th><th>Participaciones</th><th>Precio</th><th>Aporte</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <h2>Compras por fondo</h2><div class="scroll"><table><thead><tr><th>Fondo</th><th>Compras</th><th>Total invertido</th></tr></thead><tbody>${sum}</tbody></table></div>
+  <div class="actions"><button class="btn ghost" id="undo" ${saveMode === "readonly" || busy ? "disabled" : ""}>Deshacer el último mes registrado</button></div>`;
+}
+
+function revView(){
+  const c = compute();
+  const year = String(new Date().getFullYear());
+  const done = state.review[year] || {};
+  const bands = c.invested > 0 ? c.rows.filter(r => Math.abs(r.actual - r.w) > 5) : [];
+  const bandTxt = c.invested === 0 ? "Cargá los valores de tu cuenta para revisar desvíos."
+    : bands.length ? bands.map(r => `${esc(r.name)}: ${fmt(r.actual,1)}% contra meta de ${fmt(r.w)}%`).join("; ") + ". Considerá vender parte del excedente para volver a la meta."
+    : "Ningún fondo se desvía más de 5 puntos de su meta. No hace falta vender nada.";
+  const items = state.funds.map(f => `<label><input type="checkbox" data-rev="${f.id}" ${done[f.id] ? "checked" : ""} ${saveMode === "readonly" ? "disabled" : ""}><div><b>${esc(f.name)}</b><span>${esc(f.exit)}</span></div></label>`).join("");
+  return `<h2>Revisión anual ${year}</h2><p class="hint">Una vez por año, no más. Las condiciones de salida miran la tesis o el vehículo, nunca el precio del fondo.</p>
+  <div class="review"><label><span>${bands.length ? "⚠" : "✓"}</span><div><b>Desvíos de más de 5 puntos</b><span>${bandTxt}</span></div></label></div>
+  <div class="review" style="margin-top:12px"><label><span>↻</span><div><b>Actualizar volatilidades</b><span>Copiá la volatilidad a 1 año de cada fondo desde su ficha en justETF a la tabla de la compra del mes.</span></div></label></div>
+  <h2>Condiciones de cada fondo</h2><div class="review">${items}</div>
+  <div class="actions"><button class="btn" id="saveRev" ${saveMode === "readonly" || busy ? "disabled" : ""}>Guardar revisión</button></div>`;
+}
+
+function setView(){
+  const sum = state.funds.reduce((a,f) => a + f.w, 0);
+  const rows = state.funds.map(f => `<tr><td class="fname">${esc(f.name)}<span class="small">${esc(f.isin)} · ${esc(f.block)}</span></td>
+    <td><input type="text" data-tk="${f.id}" value="${esc(f.ticker)}" placeholder="Ticker" style="width:100px" aria-label="Ticker de ${esc(f.name)}"></td>
+    <td><input type="number" min="0" max="100" step="any" data-w="${f.id}" value="${f.w}" style="width:80px" aria-label="Meta de ${esc(f.name)}"></td></tr>`).join("");
+  return `<h2>Pesos objetivo</h2><p class="hint">Los pesos tienen que sumar 100%. Los tickers son los de Londres en dólares; si alguno está vacío, buscalo en Interactive Brokers por ISIN.</p>
+  <div class="scroll"><table><thead><tr><th>Fondo</th><th>Ticker</th><th>Meta (%)</th></tr></thead><tbody>${rows}
+  <tr><td class="fname">Total</td><td></td><td id="wsum" class="${Math.abs(sum-100) > 0.01 ? "neg" : ""}">${fmt(sum,1)}%</td></tr></tbody></table></div>
+  <h2>Reglas</h2><div class="settings">
+    <label>Comisión estimada por compra (USD)<input type="number" id="fee" min="0" step="any" value="${state.settings.fee}"></label>
+    <label>Ticket mínimo por compra (USD)<input type="number" id="minTicket" min="0" step="any" value="${state.settings.minTicket}"></label>
+    <label>Máximo de compras por mes<input type="number" id="maxBuys" min="1" max="6" step="1" value="${state.settings.maxBuys || 3}"></label>
+    <label>Caída, medida en volatilidades, que suma 1× de prioridad<input type="number" id="volStep" min="0.25" step="any" value="${state.settings.volStep || 1}"></label>
+  </div>
+  <label class="check"><input type="checkbox" id="useDD" ${state.settings.useDD ? "checked" : ""}> Dar más prioridad a los fondos que cayeron desde su máximo, en relación con su volatilidad</label>
+  <h2>Composición de cada fondo</h2><p class="hint">Aproximada, para los gráficos de exposición. Escribí cada parte como "Nombre porcentaje", separadas por punto y coma. Los datos iniciales salen de las fichas de justETF, Avantis, VanEck y First Trust, con estimaciones donde no había datos completos; actualizalos en la revisión anual desde la ficha de cada fondo.</p>
+  <div class="scroll comp"><table><thead><tr><th>Fondo</th><th>Regiones</th><th>Sectores</th></tr></thead><tbody>${state.funds.map(f => `<tr><td class="fname">${esc(f.name)}</td>
+    <td><textarea data-creg="${f.id}" rows="2" aria-label="Regiones de ${esc(f.name)}">${esc(((state.comp||{})[f.id]||{}).reg || "")}</textarea></td>
+    <td><textarea data-csec="${f.id}" rows="2" aria-label="Sectores de ${esc(f.name)}">${esc(((state.comp||{})[f.id]||{}).sec || "")}</textarea></td></tr>`).join("")}</tbody></table></div>
+  <h2>Tus datos</h2><p class="hint">En esta página tus datos se guardan solo en este navegador: nadie más los ve y no se suben a ningún servidor. Si borrás los datos del navegador o cambiás de dispositivo, se pierden, así que exportá una copia de respaldo cada tanto.</p>
+  <div class="actions" style="margin-top:0"><button class="btn ghost" id="exportData" type="button">Exportar copia (.json)</button>
+    <label class="btn ghost" style="display:inline-flex;align-items:center">Importar copia<input type="file" id="importData" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0"></label></div>
+  <div class="actions"><button class="btn" id="saveSet" ${saveMode === "readonly" || busy ? "disabled" : ""}>Guardar ajustes</button></div>`;
+}
+
+const FUND_COLOR = {ndx:"var(--f1)",exus:"var(--f2)",scv:"var(--f3)",emv:"var(--f4)",cmd:"var(--f5)",gold:"var(--f6)",grid:"var(--f7)",nucl:"var(--f8)",dfns:"var(--f9)",qntm:"var(--f10)"};
+const CAT_FIXED = {"Oro":"var(--c12)","Commodities":"var(--c11)"};
+function fundColor(id, i){ return FUND_COLOR[id] || `var(--c${(i%10)+1})`; }
+
+function parseComp(txt){
+  const out = {};
+  String(txt || "").split(/[;\n]/).forEach(part => {
+    const m = part.trim().match(/^(.*?)[\s:]+(-?[\d.,]+)\s*%?$/);
+    if (m){ const k = m[1].trim(); const v = num(m[2]); if (k && v > 0) out[k] = (out[k] || 0) + v; }
+  });
+  return out;
+}
+
+function donut(items){
+  const total = items.reduce((a,x) => a + x.v, 0);
+  if (total <= 0) return "";
+  let a0 = -Math.PI/2, paths = "";
+  const R = 80, r = 50, cx = 85, cy = 85;
+  items.forEach(x => {
+    const frac = x.v / total; if (frac <= 0) return;
+    if (frac > 0.9999){ paths += `<circle cx="${cx}" cy="${cy}" r="${(R+r)/2}" fill="none" stroke="${x.c}" stroke-width="${R-r}"/>`; return; }
+    const a1 = a0 + frac * 2 * Math.PI, big = frac > 0.5 ? 1 : 0;
+    const p = (rad, ang) => `${(cx + rad*Math.cos(ang)).toFixed(2)} ${(cy + rad*Math.sin(ang)).toFixed(2)}`;
+    paths += `<path d="M ${p(R,a0)} A ${R} ${R} 0 ${big} 1 ${p(R,a1)} L ${p(r,a1)} A ${r} ${r} 0 ${big} 0 ${p(r,a0)} Z" fill="${x.c}" stroke="var(--panel)" stroke-width="1.5"/>`;
+    a0 = a1;
+  });
+  const leg = items.filter(x => x.v > 0).map(x => `<li><i style="background:${x.c}"></i><span>${esc(x.k)}</span><em>${fmt(x.v/total*100,1)}%</em></li>`).join("");
+  return `<div class="pie"><svg viewBox="0 0 170 170" role="img" aria-label="Gráfico de torta">${paths}</svg><ul class="legend">${leg}</ul></div>`;
+}
+
+function lineChart(series, labels, opts){
+  const W = 640, H = 220, L = 58, Rp = 12, T = 12, B = 28;
+  const all = series.flatMap(s => s.v);
+  let lo = Math.min(...all), hi = Math.max(...all);
+  if (opts && opts.zero) lo = Math.min(0, lo);
+  if (hi === lo){ hi += 1; lo -= 1; }
+  const pad = (hi - lo) * 0.08; hi += pad; if (!(opts && opts.zero)) lo -= pad;
+  const n = labels.length, x = i => L + (n === 1 ? 0 : i * (W - L - Rp) / (n - 1)), y = v => T + (hi - v) * (H - T - B) / (hi - lo);
+  const grid = [0, 0.5, 1].map(f => { const v = lo + (hi - lo) * f; return `<line x1="${L}" x2="${W-Rp}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text class="axis" x="${L-8}" y="${y(v)+4}" text-anchor="end">${opts && opts.money ? fmt(v/1000,1) + "k" : fmt(v,0)}</text>`; }).join("");
+  const lines = series.map(s => `<polyline fill="none" stroke="${s.c}" stroke-width="2.5" stroke-linejoin="round" points="${s.v.map((v,i) => x(i).toFixed(1) + "," + y(v).toFixed(1)).join(" ")}"/>` + (n === 1 ? `<circle cx="${x(0)}" cy="${y(s.v[0])}" r="4" fill="${s.c}"/>` : "")).join("");
+  const xl = `<text class="axis" x="${L}" y="${H-8}">${esc(labels[0])}</text>` + (n > 1 ? `<text class="axis" x="${W-Rp}" y="${H-8}" text-anchor="end">${esc(labels[n-1])}</text>` : "");
+  const lg = series.map(s => `<span><i style="background:${s.c}"></i>${esc(s.name)}</span>`).join("");
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts && opts.label || "Gráfico")}">${grid}${lines}${xl}</svg><div class="lg">${lg}</div></div>`;
+}
+
+function exposure(kind){
+  const tot = {}; let sum = 0;
+  state.funds.forEach(f => {
+    const v = state.holdings[f.id] || 0; if (v <= 0) return;
+    const comp = parseComp(((state.comp || {})[f.id] || {})[kind]);
+    const cs = Object.values(comp).reduce((a,b) => a+b, 0);
+    if (cs <= 0){ tot["Sin datos"] = (tot["Sin datos"] || 0) + v; sum += v; return; }
+    Object.entries(comp).forEach(([k,w]) => { tot[k] = (tot[k] || 0) + v * w / cs; });
+    sum += v;
+  });
+  const arr = Object.entries(tot).sort((a,b) => b[1]-a[1]);
+  let ci = 0;
+  return arr.map(([k,v]) => ({k, v, c: CAT_FIXED[k] || `var(--c${(ci++ % 10) + 1})`}));
+}
+
+function carteraView(){
+  const H = (state.nav && state.nav.history) || [];
+  const invested = state.funds.reduce((a,f) => a + (state.holdings[f.id] || 0), 0);
+  const total = invested + (state.cash || 0);
+  const aportado = H.reduce((a,h) => a + h.contrib, 0) + (H.length ? H[0].initial || 0 : 0);
+  const last = H[H.length-1];
+  const navNow = state.nav && state.nav.units > 0 ? total / state.nav.units : 100;
+  const navRet = navNow / 100 - 1;
+  const kpis = `<div class="kpis"><div><b>${usd(total)}</b><span>Valor de la cartera</span></div>
+    <div><b>${usd(aportado)}</b><span>Total aportado</span></div>
+    <div><b>${H.length ? (navRet >= 0 ? "+" : "") + fmt(navRet*100,1) + "%" : "—"}</b><span>Rendimiento de la cuotaparte</span></div>
+    <div><b>${H.length ? fmt(navNow,2) : "100,00"}</b><span>Valor de la cuotaparte (inicio = 100)</span></div></div>`;
+  const byFund = state.funds.map((f,i) => ({k: f.name, v: state.holdings[f.id] || 0, c: fundColor(f.id, i)}));
+  const pieF = invested > 0 ? donut(byFund) : `<p class="hint">Cargá valores o registrá la primera compra para ver la distribución.</p>`;
+  let hist = `<p class="hint">Los gráficos de evolución aparecen desde el primer mes registrado; con dos o más meses se ve la tendencia.</p>`;
+  if (H.length){
+    const labels = H.map(h => h.date.slice(0,7));
+    let acc = H[0].initial || 0;
+    const aport = H.map(h => (acc += h.contrib));
+    hist = `<div class="pies"><div class="panel"><h3>Valor de la cartera y total aportado</h3>${lineChart([{name:"Valor después del aporte", v:H.map(h => h.post), c:"var(--accent)"},{name:"Total aportado", v:aport, c:"var(--muted)"}], labels, {money:true, zero:true, label:"Valor de la cartera y total aportado"})}</div>
+      <div class="panel"><h3>Cuotaparte: tu rendimiento sin el efecto de los aportes</h3>${lineChart([{name:"Valor de la cuotaparte", v:H.map(h => h.nav), c:"var(--b1)"}], labels, {label:"Evolución del valor de la cuotaparte"})}</div></div>`;
+  }
+  const reg = exposure("reg"), sec = exposure("sec");
+  return `<h2>Tu cartera</h2>${kpis}
+  <div class="panel" style="margin-top:14px"><h3>Distribución por fondo</h3>${pieF}
+    <p class="hint" style="margin-top:10px">Azules: bloque principal. Dorados: commodities. Violetas: temáticos.</p></div>
+  <h2>Evolución</h2>${hist}
+  <h2>Exposición</h2><p class="hint">Calculada con la composición aproximada de cada fondo (región y sector), ponderada por cuánto tenés en cada uno. La composición se edita en Ajustes y conviene actualizarla en la revisión anual.</p>
+  <div class="pies"><div class="panel"><h3>Por región</h3>${invested > 0 ? donut(reg) : `<p class="hint">Sin posiciones todavía.</p>`}</div>
+    <div class="panel"><h3>Por sector</h3>${invested > 0 ? donut(sec) : `<p class="hint">Sin posiciones todavía.</p>`}</div></div>`;
+}
+
+function recordNav(batch){
+  state.nav = state.nav || {units: 0, history: []};
+  const pre = state.funds.reduce((a,f) => a + (state.holdings[f.id] || 0), 0) + (state.cash || 0);
+  const contrib = state.settings.contribution || 0;
+  let initial = 0;
+  if (state.nav.units <= 0 && pre > 0){ state.nav.units = pre / 100; initial = pre; }
+  const nav = state.nav.units > 0 ? pre / state.nav.units : 100;
+  state.nav.units += contrib / nav;
+  state.nav.history.push({date: today(), batch, pre, contrib, nav, units: state.nav.units, post: pre + contrib, initial});
+}
+
+function render(){
+  const tabs = [["mes","Compra del mes"],["cart","Cartera"],["hist","Historial"],["rev","Revisión anual"],["set","Ajustes"]];
+  const body = tab === "mes" ? mesView() : tab === "cart" ? carteraView() : tab === "hist" ? histView() : tab === "rev" ? revView() : setView();
+  const links = [["", "Herramienta"], ["metodologia.html", "Metodología"], ["screener.html", "Screener"], ["proceso.html", "Proceso"]];
+  const siteNav = `<div class="site"><div class="site-in"><a class="brand" href="${SITE_BASE || "./"}">Plan ETF<span>15 años</span></a>
+    <nav class="site-links" aria-label="Secciones del sitio">${links.map(([h,l]) => `<a href="${SITE_BASE}${h || (SITE_BASE ? "" : "./")}" ${h === "" ? 'aria-current="page"' : ""}>${l}</a>`).join("")}</nav></div></div>`;
+  $("#root").innerHTML = `${siteNav}<div class="wrap"><header><h1>Compra mensual de ETFs</h1>
+    <p class="sub">Todo el aporte se invierte cada mes, repartido entre pocos fondos: los más atrasados respecto de su meta y los que más cayeron. Meta: 70% principal, 10% commodities, 20% temáticos.</p></header>
+    <nav class="tabs" role="tablist">${tabs.map(([k,l]) => `<button role="tab" data-tab="${k}" aria-selected="${k===tab}">${l}</button>`).join("")}</nav>
+    <main>${body}</main></div>`;
+  bind();
+}
+
+function refreshCalc(){
+  readInputs();
+  const a = document.activeElement, keys = ["val","dd","vol","price"];
+  const kind = a && keys.find(k => a.dataset && a.dataset[k]);
+  const sel = kind ? `[data-${kind}="${a.dataset[kind]}"]` : (a && a.id ? "#" + a.id : null);
+  const pos = a && a.selectionStart;
+  render();
+  const el = sel ? document.querySelector(sel) : null;
+  if (el){ el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch {} }
+}
+
+function bind(){
+  document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { if (tab === "mes") readInputs(); tab = b.dataset.tab; render(); });
+  if (tab === "mes"){
+    document.querySelectorAll("[data-val],[data-dd],[data-vol],[data-price],#contrib,#carry").forEach(i => i.addEventListener("change", refreshCalc));
+    const reg = $("#register");
+    if (reg) reg.onclick = () => {
+      readInputs();
+      const c = compute();
+      const batch = Date.now();
+      recordNav(batch);
+      if (c.wait){
+        const cb = state.cash || 0;
+        state.cash = c.cash;
+        state.log.push({date: today(), batch, cashBefore: cb, contribution: state.settings.contribution, fund: null, amount: 0, fee: 0});
+      } else {
+        c.buys.forEach((b,i) => {
+          state.log.push({date: today(), batch, cashBefore: i === 0 ? (state.cash || 0) : undefined, contribution: i === 0 ? state.settings.contribution : 0, fund: b.r.id, amount: b.spend, shares: b.shares, price: b.price || null, fee: state.settings.fee});
+          state.holdings[b.r.id] = (state.holdings[b.r.id] || 0) + b.spend;
+        });
+        state.cash = c.leftover >= 1 ? Math.round(c.leftover * 100) / 100 : 0;
+      }
+      state.lastUpdate = today();
+      save(c.wait ? "Mes registrado sin compra" : "Compras registradas");
+    };
+    const sv = $("#saveVals");
+    if (sv) sv.onclick = () => { readInputs(); state.lastUpdate = today(); save("Valores guardados"); };
+  }
+  if (tab === "hist"){
+    const u = $("#undo");
+    if (u) u.onclick = () => {
+      const last = state.log[state.log.length-1]; if (!last) return;
+      const key = last.batch || last.date;
+      const NH = (state.nav && state.nav.history) || [];
+      if (NH.length && NH[NH.length-1].batch === last.batch){ NH.pop(); state.nav.units = NH.length ? NH[NH.length-1].units : 0; }
+      while (state.log.length && (state.log[state.log.length-1].batch || state.log[state.log.length-1].date) === key){
+        const e = state.log.pop();
+        if (e.cashBefore !== undefined && e.cashBefore !== null) state.cash = e.cashBefore;
+        if (e.fund){ state.holdings[e.fund] = Math.max(0, (state.holdings[e.fund] || 0) - e.amount); }
+      }
+      save("Último registro deshecho");
+    };
+  }
+  if (tab === "rev"){
+    const b = $("#saveRev");
+    if (b) b.onclick = () => {
+      const year = String(new Date().getFullYear()); state.review[year] = {};
+      document.querySelectorAll("[data-rev]").forEach(i => { if (i.checked) state.review[year][i.dataset.rev] = true; });
+      save("Revisión guardada");
+    };
+  }
+  if (tab === "set"){
+    const upd = () => { const s = [...document.querySelectorAll("[data-w]")].reduce((a,i) => a + num(i.value), 0); const el = $("#wsum"); el.textContent = fmt(s,1) + "%"; el.className = Math.abs(s-100) > 0.01 ? "neg" : ""; };
+    document.querySelectorAll("[data-w]").forEach(i => i.addEventListener("input", upd));
+    const ex = $("#exportData");
+    if (ex) ex.onclick = () => {
+      const blob = new Blob([JSON.stringify(state, null, 1)], {type: "application/json"});
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "cartera-etf-" + today() + ".json";
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    };
+    const im = $("#importData");
+    if (im) im.onchange = () => {
+      const file = im.files && im.files[0]; if (!file) return;
+      const fr = new FileReader();
+      fr.onload = () => {
+        try {
+          const d = JSON.parse(fr.result);
+          if (!d || !Array.isArray(d.funds) || !d.settings) throw new Error("formato");
+          state = d; save("Copia importada");
+        } catch { toast("Ese archivo no es una copia válida de esta herramienta."); }
+      };
+      fr.readAsText(file);
+    };
+    const b = $("#saveSet");
+    if (b) b.onclick = () => {
+      const s = [...document.querySelectorAll("[data-w]")].reduce((a,i) => a + num(i.value), 0);
+      if (Math.abs(s - 100) > 0.01){ toast("Los pesos suman " + fmt(s,1) + "%. Ajustalos para que sumen 100% y volvé a guardar."); return; }
+      state.funds.forEach(f => { f.w = num($(`[data-w="${f.id}"]`).value); f.ticker = $(`[data-tk="${f.id}"]`).value.trim(); });
+      state.settings.fee = num($("#fee").value); state.settings.minTicket = num($("#minTicket").value); state.settings.useDD = $("#useDD").checked; state.settings.maxBuys = Math.max(1, Math.round(num($("#maxBuys").value))); state.settings.volStep = Math.max(0.25, num($("#volStep").value));
+      state.comp = state.comp || {};
+      state.funds.forEach(f => { state.comp[f.id] = {reg: $(`[data-creg="${f.id}"]`).value.trim(), sec: $(`[data-csec="${f.id}"]`).value.trim()}; });
+      save("Ajustes guardados");
+    };
+  }
+}
+
+render();
+initCapability();
+})();
+</script>
+</body>
+</html>
