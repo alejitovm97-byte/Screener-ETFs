@@ -109,6 +109,24 @@ td input.dd{width:70px}
 .settings label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
 .check{display:flex;gap:8px;align-items:center;font-size:14px;margin-top:14px}
 .empty{padding:22px;color:var(--muted)}
+.site{background:var(--panel);border-bottom:1px solid var(--line)}
+.site-in{max-width:1080px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap}
+.brand{font:650 19px/1 "Source Serif 4",Georgia,serif;color:var(--ink);text-decoration:none;display:flex;align-items:baseline;gap:8px}
+.brand span{font:600 12.5px "Manrope",sans-serif;color:var(--muted)}
+.site-links{display:flex;gap:4px;overflow-x:auto}
+.site-links a{font-weight:600;font-size:14px;color:var(--muted);text-decoration:none;padding:7px 10px;border-radius:7px;white-space:nowrap}
+.site-links a:hover{color:var(--ink);background:var(--paper)}
+.site-links a[aria-current="page"]{color:var(--ink);box-shadow:inset 0 -2px 0 var(--accent);border-radius:0}
+.wrap header{padding-top:10px}
+.sub{max-width:70ch}
+.start{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:4px 20px 12px}
+.start h2{margin:14px 0 6px;font-size:18px}
+.start ol{margin:0;padding-left:20px}
+.start li{margin:6px 0;max-width:80ch}
+details.help{margin:-4px 0 14px;max-width:80ch}
+details.help summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--accent)}
+details.help p{font-size:14px;color:var(--muted);margin:8px 0 0}
+.ticket .why b{font-weight:700}
 :root{--f1:#1E4E6E;--f2:#2F6E95;--f3:#5C93B8;--f4:#93BAD6;--f5:#9A6B1F;--f6:#D1A24A;--f7:#5E3563;--f8:#7F4E85;--f9:#A57AAA;--f10:#C9A8CD;
   --c1:#2F6E95;--c2:#C0792B;--c3:#4E8F5A;--c4:#A34A4A;--c5:#7F4E85;--c6:#3F8F8F;--c7:#B5577F;--c8:#8C8C3A;--c9:#6B7C85;--c10:#5A4FA0;--c11:#9A6B1F;--c12:#D1A24A}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--f1:#4F86AE;--f2:#6FA3C9;--f3:#98C0DD;--f4:#C3DBEC;--f5:#C99A4B;--f6:#E9C77F;--f7:#A06AA6;--f8:#B98BBE;--f9:#D0ACD4;--f10:#E6D1E8;
@@ -143,6 +161,7 @@ td input.dd{width:70px}
 <script id="app-script">
 (function(){
 const LS_KEY = "plan-etf-mensual-v1";
+const SITE_BASE = "";
 const BLOCK_COLOR = {"Principal":"var(--b1)","Commodities":"var(--b2)","Temáticos":"var(--b3)"};
 let state = JSON.parse(document.getElementById("state").textContent);
 let tab = "mes";
@@ -311,7 +330,7 @@ function ticketHtml(c){
   }
   const lines = c.buys.map(b => {
     const r = b.r;
-    const units = b.shares != null ? `${fmt(b.shares)} participaciones a ${usd(b.price,2)}` : "cargá el precio para calcular participaciones";
+    const units = b.shares != null ? `${fmt(b.shares)} participaciones a ${usd(b.price,2)}` : "sin precio cargado";
     const tag = r.m > 1.001 ? `<span class="flag">${fmt(state.dd[r.id]||0)}% bajo máx.</span>` : "";
     return `<div class="line"><div><span class="lname"><span class="b-dot" style="background:${BLOCK_COLOR[r.block]}"></span>${esc(r.name)}</span>${tag}
       <span class="ids">${esc(r.isin)}${r.ticker ? " · Londres: " + esc(r.ticker) : ""}</span></div>
@@ -321,7 +340,7 @@ function ticketHtml(c){
   const skipped = c.ranked.filter(r => !c.buys.some(b => b.r.id === r.id)).slice(0,2).map(r => esc(r.name));
   return `<section class="ticket multi" aria-live="polite"><div class="thead"><p class="what">Este mes comprá</p><p class="count">${c.buys.length === 1 ? "1 fondo" : c.buys.length + " fondos"}</p></div>
     ${lines}
-    <p class="why">Reparto según déficit frente a la meta y caída desde el máximo. Comisiones estimadas: ${usd(c.feeTotal,2)} (${fmt(pctFee,1)}% del aporte).${c.leftover >= 1 ? ` Sobran ${usd(c.leftover,2)} para el mes que viene.` : ""}${skipped.length ? ` Quedan para más adelante: ${skipped.join(" y ")}.` : ""}</p></section>`;
+    <p class="why"><b>Total: ${usd(c.buys.reduce((a,b) => a + b.spend, 0), 0)} en ${c.buys.length === 1 ? "una compra" : c.buys.length + " compras"}.</b> Reparto según déficit frente a la meta y caída desde el máximo. Comisiones estimadas: ${usd(c.feeTotal,2)} (${fmt(pctFee,1)}% del aporte).${c.leftover >= 1 ? ` Sobran ${usd(c.leftover,2)} para el mes que viene.` : ""}${skipped.length ? ` Quedan para más adelante: ${skipped.join(" y ")}.` : ""}</p></section>`;
 }
 
 function mesView(){
@@ -348,14 +367,19 @@ function mesView(){
     });
   });
   const ro = saveMode === "readonly";
-  return `${ticketHtml(c)}
+  const first = !state.log.length && c.invested === 0 ? `<section class="start" aria-label="Primeros pasos"><h2>Primeros pasos</h2><ol>
+    <li><b>Cargá lo que ya tenés.</b> En la tabla de abajo, el valor de mercado en dólares de cada posición; si arrancás de cero, dejala vacía.</li>
+    <li><b>Mirá la boleta.</b> Te dice qué fondos comprar este mes y cuánto. Con el precio cargado, calcula participaciones enteras.</li>
+    <li><b>Comprá y registrá.</b> Hacé las órdenes en tu broker y apretá "Registrar". El mes que viene, repetís desde el paso 1.</li></ol></section>` : "";
+  return `${ticketHtml(c)}${first}
   <div class="money">
     <label>Aporte de este mes (USD)<input id="contrib" type="text" inputmode="decimal" value="${inp(state.settings.contribution)}"></label>
     <label>Efectivo que quedó del mes anterior<input id="carry" type="text" inputmode="decimal" value="${inp(state.cash) || "0"}"></label>
     <label>Total en la cartera<input type="text" value="${usd(c.total)}" readonly tabindex="-1"></label>
   </div>
   <h2>Actualizá los valores de tu cuenta</h2>
-  <p class="hint">Copiá de Interactive Brokers el valor de mercado de cada posición en dólares. La caída desde el máximo de 52 semanas va en porcentaje (si está 12% abajo, poné 12). La prioridad sube según cuánto cayó en relación con su volatilidad anual: una caída igual a su volatilidad duplica la prioridad, con tope de 3 veces. La volatilidad cambia poco; alcanza con actualizarla en la revisión anual (está en la ficha de justETF). El precio en dólares sirve para calcular participaciones enteras. Todo se recalcula al salir de cada campo.</p>
+  <p class="hint">Copiá de Interactive Brokers el valor de mercado de cada posición en dólares. Todo se recalcula al salir de cada campo.</p>
+  <details class="help"><summary>Qué va en cada columna</summary><p>La caída desde el máximo de 52 semanas va en porcentaje (si está 12% abajo, poné 12). La prioridad sube según cuánto cayó en relación con su volatilidad anual: una caída igual a su volatilidad duplica la prioridad, con tope de 3 veces. La volatilidad cambia poco; alcanza con actualizarla en la revisión anual (está en la ficha de justETF). El precio en dólares sirve para calcular participaciones enteras.</p></details>
   <div class="scroll"><table class="grid"><thead><tr><th>Fondo</th><th>Meta</th><th>Valor actual (USD)</th><th>Caída desde máx. (%)</th><th>Volatilidad anual (%)</th><th>Precio (USD)</th><th>Peso actual vs meta</th><th>Déficit</th></tr></thead><tbody>${rows}</tbody></table></div>
   <div class="actions">
     <button class="btn" id="register" ${ro || busy ? "disabled" : ""}>${c.wait ? "Registrar mes sin compra" : (c.buys.length > 1 ? "Registrar estas compras" : "Registrar esta compra")}</button>
@@ -535,8 +559,11 @@ function recordNav(batch){
 function render(){
   const tabs = [["mes","Compra del mes"],["cart","Cartera"],["hist","Historial"],["rev","Revisión anual"],["set","Ajustes"]];
   const body = tab === "mes" ? mesView() : tab === "cart" ? carteraView() : tab === "hist" ? histView() : tab === "rev" ? revView() : setView();
-  $("#root").innerHTML = `<div class="wrap"><header><h1>Compra mensual de ETFs</h1>
-    <p class="sub"><a href="./" style="color:var(--accent)">Metodología</a> · <a href="screener.html" style="color:var(--accent)">Screener</a></p><p class="sub">Todo el aporte se invierte cada mes, repartido entre pocos fondos: los más atrasados respecto de su meta y los que más cayeron. 70% principal, 10% commodities, 20% temáticos.</p></header>
+  const links = [["", "Herramienta"], ["metodologia.html", "Metodología"], ["screener.html", "Screener"], ["proceso.html", "Proceso"]];
+  const siteNav = `<div class="site"><div class="site-in"><a class="brand" href="${SITE_BASE || "./"}">Plan ETF<span>15 años</span></a>
+    <nav class="site-links" aria-label="Secciones del sitio">${links.map(([h,l]) => `<a href="${SITE_BASE}${h || (SITE_BASE ? "" : "./")}" ${h === "" ? 'aria-current="page"' : ""}>${l}</a>`).join("")}</nav></div></div>`;
+  $("#root").innerHTML = `${siteNav}<div class="wrap"><header><h1>Compra mensual de ETFs</h1>
+    <p class="sub">Todo el aporte se invierte cada mes, repartido entre pocos fondos: los más atrasados respecto de su meta y los que más cayeron. Meta: 70% principal, 10% commodities, 20% temáticos.</p></header>
     <nav class="tabs" role="tablist">${tabs.map(([k,l]) => `<button role="tab" data-tab="${k}" aria-selected="${k===tab}">${l}</button>`).join("")}</nav>
     <main>${body}</main></div>`;
   bind();
